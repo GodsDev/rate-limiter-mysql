@@ -31,10 +31,13 @@ class RateLimiterMysqlTest extends RateLimiterInterfaceTest {
     }
 
 
-
     public function getLimiterTimeWrapper() {
         return $this->limiterWrapper;
     }
 
+
+    public function testFlow() {
+        $this->doTheLimiterFlow();
+    }
 //put your code here
 }
