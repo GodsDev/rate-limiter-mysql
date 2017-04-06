@@ -26,7 +26,8 @@ SET time_zone = "+00:00";
 CREATE TABLE IF NOT EXISTS `rate_limiter` (
 `id` int(11) NOT NULL,
   `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `ip` varchar(45) COLLATE utf8_czech_ci NOT NULL COMMENT 'IPv4=15, IPv6=45'
+  `user_id` varchar(45) COLLATE utf8_czech_ci UNIQUE NOT NULL,
+  `hits` int(7) UNSIGNED DEFAULT 0
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
 
 --
@@ -37,7 +38,7 @@ CREATE TABLE IF NOT EXISTS `rate_limiter` (
 -- Klíče pro tabulku `rate_limiter`
 --
 ALTER TABLE `rate_limiter`
- ADD PRIMARY KEY (`id`), ADD KEY `IP` (`ip`);
+ ADD PRIMARY KEY (`id`);
 
 --
 -- AUTO_INCREMENT pro tabulky
