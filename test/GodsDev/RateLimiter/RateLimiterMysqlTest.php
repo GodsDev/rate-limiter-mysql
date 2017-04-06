@@ -14,18 +14,26 @@ use GodsDev\RateLimiter\RateLimiterInterfaceTest;
  */
 class RateLimiterMysqlTest extends RateLimiterInterfaceTest {
     private $limiter;
-    private $timeLimiter;
+    private $limiterWrapper;
 
     protected function setUp() {
         parent::setUp();
-        $this->limiter = new RateLimiterMysql(10, 5, "id1", array());
-        $this->timeLimiter = new LimiterTimeWrapper($this->limiter, true);
+
+        $connProps = array(
+            "dsn" => "mysql:dbname=rate_limiter_test;host=127.0.0.1",
+            "user" => "root",
+            "pass" => "",
+        );
+        $this->limiter = new RateLimiterMysql(10, 5, "id1", $connProps);
+        $this->limiterWrapper = new LimiterTimeWrapper($this->limiter, true);
+
+        $this->limiterWrapper->reset();
     }
 
 
 
     public function getLimiterTimeWrapper() {
-        return $this->timeLimiter;
+        return $this->limiterWrapper;
     }
 
 //put your code here
