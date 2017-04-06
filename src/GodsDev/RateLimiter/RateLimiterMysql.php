@@ -116,7 +116,7 @@ class RateLimiterMysql implements \GodsDev\RateLimiter\RateLimiterInterface {
         //$this->conn->query("INSERT INTO `{$this->tableName}` (hits, timestamp) VALUES((`hits` + 1), {$this->getTimestamp($timestamp)}) WHERE `user_id` = \"{$this->userId}\" ON DUPLICATE KEY UPDATE timestamp = VALUES(timestamp)");
 
         $numAffected = $this->conn->exec("INSERT INTO `rate_limiter` SET `timestamp` = \"{$this->getTimestamp($timestamp)}\", `user_id` = \"{$this->userId}\""
-            . ", `hits` = (hits + 1) ON DUPLICATE KEY UPDATE user_id = \"id1\", hits = (hits + 1)");
+            . ", `hits` = (hits + 1) ON DUPLICATE KEY UPDATE user_id = \"{$this->userId}\", `hits` = (hits + 1)");
 
         return ($numAffected > 0);
     }
