@@ -6,76 +6,38 @@ namespace GodsDev\RateLimiter;
  *
  */
 
-class RateLimiterConcept implements \GodsDev\RateLimiter\RateLimiterInterface {
-    private $rate;
-    private $period;
+class RateLimiterConcept extends \GodsDev\RateLimiter\RateLimiterAdapter {
 
-    private $hits;
-    private $startTime;
-    private $timeToWait;
+    private $dataCreated;
 
     public function __construct($rate, $period) {
-        $this->rate = $rate;
-        $this->period = $period;
-        $this->reset();
+        parent::__construct($rate, $period);
+        $this->dataCreated = false;
     }
 
-    public function getHits($timestamp = null) {
-        $this->refreshState($timestamp);
-        return $this->hits;
-    }
-
-    public function getPeriod() {
-        return $this->period;
-    }
-
-    public function getRate() {
-        return $this->rate;
-    }
-
-    private function refreshState($timestamp) {
-        if (is_null($timestamp)) {
-            $timestamp = time();
-        }
-        if ($timestamp - $this->startTime >= $this->period) {
-            //a new, clean period
-            $this->reset($timestamp);
-            //echo("**clean period  [(start=$this->startTime)]**");
-        } else if ($this->hits < $this->rate) {
-            $this->timeToWait = 0;
-            //echo("**hits<rate  [(start=$this->startTime) $this->hits<$this->rate]**");
-        } else {
-            $this->timeToWait = intval( ceil($this->period - ($timestamp - $this->startTime)) );
-            //echo("**time to wait [(per=$this->period, ts=$timestamp, start=$this->startTime) $this->timeToWait]**");
-        }
-    }
-
-    public function getTimeToWait($timestamp = null) {
-        $this->refreshState($timestamp);
-        return $this->timeToWait;
-    }
-
-    public function inc($timestamp = null) {
-        $this->refreshState($timestamp);
-        if ($this->timeToWait == 0 && $this->hits < $this->rate) {
-            $this->hits++;
-            return true;
-        } else {
+    protected function fetchDataImpl(&$hits, &$startTime) {
+        if (!$this->dataCreated) {
             return false;
+        } else {
+            $hits = $this->hits;
+            $startTime = $this->startTime;
+            return true;
         }
     }
 
-    public function reset($timestamp = null) {
-        if (is_null($timestamp)) {
-            $this->startTime = time();
-            //echo("^^C startTime reset to [$this->startTime] ^^");
-        } else {
-            $this->startTime = $timestamp;
-            //echo("^^C startTime reset to preset [$this->startTime] ^^");
-        }
+    protected function resetDataImpl($hits, $startTime) {
+        $this->hits = $hits;
+        $this->startTime = $startTime;
+    }
 
-        $this->hits = 0;
-        $this->timeToWait = 0;
+    protected function storeHitsImpl($hits) {
+        $this->hits = $hits;
+    }
+
+    protected function createDataImpl($hits, $startTime) {
+        //echo(" s:$startTime");
+        //$this->reset($startTime);
+        $this->dataCreated = true;
     }
 
 }
