@@ -19,7 +19,7 @@ class RateLimiterFileTest  extends RateLimiterInterfaceTest {
     }
 
     public function createRateLimiter() {
-        $filename = __DIR__ . "/../../../storage.txt";
+        $filename = __DIR__ . "/../../../temp/storage-test.txt";
         //echo("\nstorage file: [$filename]\n");
         return new \GodsDev\RateLimiter\RateLimiterFile(10, 5, $filename);
     }
