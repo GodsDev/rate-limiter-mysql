@@ -15,9 +15,9 @@ use GodsDev\RateLimiter\RateLimiterInterfaceTest;
 class RateLimiterConceptTest extends RateLimiterInterfaceTest {
 
 
-    public function createLimiterTimeWrapper(\GodsDev\RateLimiter\RateLimiterInterface $rateLimiter) {
+    public function createRateLimiterTimeWrapper(\GodsDev\RateLimiter\RateLimiterInterface $rateLimiter) {
         //return new LimiterTimeWrapper($rateLimiter, true); //real time wait
-        return new LimiterTimeWrapper($rateLimiter, false);
+        return new RateLimiterTimeWrapper($rateLimiter, false);
     }
 
     public function createRateLimiter() {
