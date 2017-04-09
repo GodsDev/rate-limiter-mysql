@@ -1,0 +1,1 @@
+./vendor/bin/phpunit --testdox-text temp/testDox/concept.txt --coverage-html temp/coverage/concept --log-json temp/test-results/test-concept.json --report-useless-tests --strict-coverage --strict-global-state test/GodsDev/RateLimiter/RateLimiterConceptTest
