@@ -13,7 +13,7 @@ namespace GodsDev\RateLimiter;
  *
  * @author Tomáš
  */
-class RateLimiterFile extends \GodsDev\RateLimiter\RateLimiterAdapter {
+class RateLimiterFile extends \GodsDev\RateLimiter\AbstractRateLimiter {
     private $storageFileName;
 
     private function openAndWriteData($fileName, $hits, $startTime) {

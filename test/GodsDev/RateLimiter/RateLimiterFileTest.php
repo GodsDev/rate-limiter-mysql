@@ -13,15 +13,19 @@ namespace GodsDev\RateLimiter;
  *
  * @author Tomáš
  */
-class RateLimiterFileTest  extends RateLimiterInterfaceTest {
-    public function createRateLimiterTimeWrapper(RateLimiterInterface $rateLimiter) {
-        return new RateLimiterTimeWrapper($rateLimiter, false);
+class RateLimiterFileTest extends AbstractRateLimiterInterfaceTest {
+
+    private $storageFilename = __DIR__ . "/../../../temp/storage-test.txt";
+
+    public function createRateLimiter($rate, $period) {
+        return new \GodsDev\RateLimiter\RateLimiterFile($rate, $period, $this->storageFilename);
     }
 
-    public function createRateLimiter() {
-        $filename = __DIR__ . "/../../../temp/storage-test.txt";
-        //echo("\nstorage file: [$filename]\n");
-        return new \GodsDev\RateLimiter\RateLimiterFile(10, 5, $filename);
+    public function setUp() {
+        if (file_exists($this->storageFilename)) {
+            unlink($this->storageFilename);
+            sleep(1);   //need some time before the system deletes the file
+        }
+        parent::setUp();
     }
-
 }
