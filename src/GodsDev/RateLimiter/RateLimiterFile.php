@@ -37,13 +37,12 @@ class RateLimiterFile extends \GodsDev\RateLimiter\AbstractRateLimiter {
         $this->storageFileName = $storageFileName;
     }
 
-    protected function createDataImpl($hits, $startTime) {
-        //if (!fileExists($this->storageFileName)) {
-        $this->openAndWriteData($this->storageFileName, $hits, $startTime);
+    protected function createDataImpl($startTime) {
+        $this->resetDataImpl($startTime);
 
     }
 
-    protected function fetchDataImpl(&$hits, &$startTime) {
+    protected function readDataImpl(&$hits, &$startTime) {
         if (!file_exists($this->storageFileName)) {
             return false;
         } else {
@@ -54,13 +53,13 @@ class RateLimiterFile extends \GodsDev\RateLimiter\AbstractRateLimiter {
         }
     }
 
-    protected function resetDataImpl($hits, $startTime) {
-        $this->openAndWriteData($this->storageFileName, $hits, $startTime);
+    protected function resetDataImpl($startTime) {
+        $this->openAndWriteData($this->storageFileName, 0, $startTime);
     }
 
-    protected function storeHitsImpl($hits) {
+    protected function incrementHitImpl() {
         $arr = $this->openAndReadData($this->storageFileName);
-        $this->openAndWriteData($this->storageFileName, $hits, $arr["startTime"]);
+        $this->openAndWriteData($this->storageFileName, ++$arr["hits"], $arr["startTime"]);
     }
 
 }
