@@ -6,7 +6,7 @@ namespace GodsDev\RateLimiter;
  *
  */
 
-class RateLimiterConcept extends \GodsDev\RateLimiter\RateLimiterAdapter {
+class RateLimiterConcept extends \GodsDev\RateLimiter\AbstractRateLimiter {
 
     private $dataCreated;
 

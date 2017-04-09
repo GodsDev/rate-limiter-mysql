@@ -12,25 +12,14 @@ use GodsDev\RateLimiter\RateLimiterInterfaceTest;
  *
  * @author Tomáš
  */
-class RateLimiterConceptTest extends RateLimiterInterfaceTest {
+class RateLimiterConceptTest extends AbstractRateLimiterInterfaceTest {
 
-
-    public function createRateLimiterTimeWrapper(\GodsDev\RateLimiter\RateLimiterInterface $rateLimiter) {
-        //return new LimiterTimeWrapper($rateLimiter, true); //real time wait
-        return new RateLimiterTimeWrapper($rateLimiter, false);
-    }
-
-    public function createRateLimiter() {
-        //return new \GodsDev\RateLimiter\RateLimiterConcept(10000, 3600*24); //10k/day
-        return new \GodsDev\RateLimiter\RateLimiterConcept(10, 5);
+    public function createRateLimiter($rate, $period) {
+        return new \GodsDev\RateLimiter\RateLimiterConcept($rate, $period);
     }
 
     protected function setUp() {
         parent::setUp();
-    }
-
-    public function getLimiterTimeWrapper() {
-        return $this->limiterWrapper;
     }
 
 }
