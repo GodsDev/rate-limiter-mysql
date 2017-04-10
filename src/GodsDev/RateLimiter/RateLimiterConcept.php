@@ -35,6 +35,7 @@ class RateLimiterConcept extends \GodsDev\RateLimiter\AbstractRateLimiter {
 
     protected function incrementHitImpl() {
         $this->cHits++;
+        return true;
     }
 
     protected function createDataImpl($startTime) {
