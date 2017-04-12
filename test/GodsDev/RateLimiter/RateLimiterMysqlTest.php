@@ -13,7 +13,6 @@ require_once __DIR__ . "/../../../common.php";
 class RateLimiterMysqlTest extends AbstractRateLimiterInterfaceTest {
 
     private $connection;
-    private $connProps;
     private $otherProps;
 
     const ID_1 = "id_1";
@@ -23,14 +22,12 @@ class RateLimiterMysqlTest extends AbstractRateLimiterInterfaceTest {
 
     protected function setUp() {
         global $config;
-        $this->connProps = $config["dbConnection"];
-        $this->otherProps = $config["otherConf"];
 
-        $this->connection = RateLimiterMysql::createConnectionObj($this->connProps);
+        $this->otherProps = $config["otherConf"];
+        $this->connection = RateLimiterMysql::createConnectionObj($config["dbConnection"]);
         $this->deleteIds($this->connection);
 
         parent::setUp();
-
     }
 
     protected function tearDown() {
@@ -48,7 +45,7 @@ class RateLimiterMysqlTest extends AbstractRateLimiterInterfaceTest {
     }
 
     public function createRateLimiter($rate, $period) {
-        return new \GodsDev\RateLimiter\RateLimiterMysql($rate, $period, self::ID_1, $this->connection, $this->otherProps, $this->connProps);
+        return new \GodsDev\RateLimiter\RateLimiterMysql($rate, $period, self::ID_1, $this->connection, $this->otherProps);
     }
 
 
@@ -62,8 +59,8 @@ class RateLimiterMysqlTest extends AbstractRateLimiterInterfaceTest {
 
     public function test_Two_Limiters_With_Different_ID_Should_Behave_Independently() {
 
-        $limA = new RateLimiterMysql(3, 20, self::ID_A, $this->connection, null, $this->connProps);
-        $limB = new RateLimiterMysql(3, 20, self::ID_B, $this->connection, null, $this->connProps);
+        $limA = new RateLimiterMysql(3, 20, self::ID_A, $this->connection, null);
+        $limB = new RateLimiterMysql(3, 20, self::ID_B, $this->connection, null);
         $startTime = time();
         //echo "--------start=" . date("Y-m-d H:i:s", $startTime);
 

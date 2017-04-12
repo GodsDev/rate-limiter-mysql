@@ -21,7 +21,6 @@ class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
     private $tableName;
 
     private $conn; //PDO connection
-    private $connProps; //PDO connection
 
 
 
@@ -42,7 +41,12 @@ class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
         Assertion::isArray($connectionProperties);
         try {
             $cp = $connectionProperties;
-            $conn = new \PDO($cp["dsn"], $cp["user"], $cp["pass"]);
+            $conn = new \PDO($cp["dsn"], $cp["user"], $cp["pass"]
+                    , (false) ?
+                        array(\PDO::ATTR_PERSISTENT => true)
+                        :
+                        array()
+                );
             $conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
             return $conn;
@@ -66,12 +70,10 @@ class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
      *
      * @see createConnectionObj
      */
-    public function __construct($rate, $period, $userId, \PDO $PDOConnection, array $otherProperties = null, $connProps) {
+    public function __construct($rate, $period, $userId, \PDO $PDOConnection, array $otherProperties = null) {
         parent::__construct($rate, $period);
 
         $this->conn = $PDOConnection;
-
-        $this->connProps = $connProps;
 
         $default_other_props = array(
                 "tableName" => self::DEFAULT_TABLE_NAME,
@@ -90,8 +92,6 @@ class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
      * @return \PDO a PDO db connection
      */
     private function getConnection() {
-        $this->conn = self::createConnectionObj($this->connProps);
-
         return $this->conn;
     }
 
