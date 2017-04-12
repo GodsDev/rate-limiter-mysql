@@ -53,7 +53,7 @@ class RateLimiterFile extends \GodsDev\RateLimiter\AbstractRateLimiter {
         return $startTime;
     }
 
-    protected function incrementHitImpl() {
+    protected function incrementHitImpl($lastKnownHitCount, $lastKnownStartTime) {
         $arr = $this->openAndReadData($this->storageFileName);
         $this->openAndWriteData($this->storageFileName, ++$arr["hits"], $arr["startTime"]);
         return true;
