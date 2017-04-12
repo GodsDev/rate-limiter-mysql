@@ -70,7 +70,7 @@ class RateLimiterMysqlTest extends AbstractRateLimiterInterfaceTest {
         //$this->assertLessThanOrEqual(1, 2);  //fail
 
         $this->assertLessThanOrEqual($t, $st_A);
-        $this->assertTrue($limA->inc($t));
+        $this->assertEquals(1, $limA->inc($t));
         $this->assertEquals(1, $limA->getHits($t));
 
         $t += 10;
@@ -80,11 +80,11 @@ class RateLimiterMysqlTest extends AbstractRateLimiterInterfaceTest {
 
         $this->assertLessThanOrEqual($st_B, $st_A);
 
-        $this->assertTrue($limA->inc($t));
-        $this->assertTrue($limA->inc($t));
-        $this->assertFalse($limA->inc($t));
+        $this->assertEquals(1, $limA->inc($t));
+        $this->assertEquals(1, $limA->inc($t));
+        $this->assertEquals(0, $limA->inc($t));
 
-        $this->assertTrue($limB->inc($t));
+        $this->assertEquals(1, $limB->inc($t));
 
         $this->assertEquals(3, $limA->getHits($t));
         $this->assertEquals(1, $limB->getHits($t));
@@ -97,16 +97,16 @@ class RateLimiterMysqlTest extends AbstractRateLimiterInterfaceTest {
         $this->assertEquals(0, $limA->getTimeToWait($t));
 
         $this->assertEquals(1, $limB->getHits($t));
-        $this->assertTrue($limB->inc($t));
+        $this->assertEquals(1, $limB->inc($t));
         $this->assertEquals(2, $limB->getHits($t));
 
         $t += 6;
 
-        $this->assertTrue($limB->inc($t));
+        $this->assertEquals(1, $limB->inc($t));
         $this->assertEquals(3, $limB->getHits($t));
         $this->assertEquals(4, $limB->getTimeToWait($t));
 
-        $this->assertTrue($limA->inc($t));
+        $this->assertEquals(1, $limA->inc($t));
         $this->assertEquals(1, $limA->getHits($t));
         $this->assertEquals(0, $limA->getTimeToWait($t));
 
@@ -115,8 +115,8 @@ class RateLimiterMysqlTest extends AbstractRateLimiterInterfaceTest {
         $this->assertEquals(0, $limB->getHits($t));
         $this->assertEquals(0, $limB->getTimeToWait($t));
 
-        $this->assertTrue($limA->inc($t));
-        $this->assertTrue($limA->inc($t));
+        $this->assertEquals(1, $limA->inc($t));
+        $this->assertEquals(1, $limA->inc($t));
         $this->assertEquals(3, $limA->getHits($t));
         $this->assertEquals(10, $limA->getTimeToWait($t));
     }
