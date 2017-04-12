@@ -10,29 +10,24 @@ use Assert\Assertion;
  *
  * @see RateLimiterInterface
  */
-class RateLimiterMysql implements \GodsDev\RateLimiter\RateLimiterInterface {
+
+
+class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
     const DEFAULT_TABLE_NAME = "rate_limiter"; //default rate limiter table name
 
-    private $period;
-    private $rate;
     private $userId;
-    private $connProps;
+
     private $otherProps;
     private $tableName;
 
     private $conn; //PDO connection
+    private $connProps; //PDO connection
+
+
 
     /**
      *
-     * @param integer $rate number of requests per period
-     * @param integer $period duration of a period
-     * @param string $userId unique user identifier
-     * @param array $connectionProperties
-     * @param array $otherProperties
-     *
-     * @throws \PDOException
-     *
-     * @see http://php.net/manual/en/pdo.construct.php
+     * creates a PDO db connection object
      *
      *   $connection properties example:
      *    [
@@ -41,15 +36,42 @@ class RateLimiterMysql implements \GodsDev\RateLimiter\RateLimiterInterface {
      *     'pass' => '***',
      *    ]
      *
+     * @see http://php.net/manual/en/pdo.construct.php
+     */
+    public static function createConnectionObj($connectionProperties) {
+        Assertion::isArray($connectionProperties);
+        try {
+            $cp = $connectionProperties;
+            $conn = new \PDO($cp["dsn"], $cp["user"], $cp["pass"]);
+            $conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+
+            return $conn;
+        } catch (\PDOException $pe) {
+            throw new RateLimiterException("createConnectionObj failed", -1, $pe);
+        }
+    }
+
+    /**
+     *
+     * @param integer $rate number of requests per period
+     * @param integer $period duration of a period
+     * @param string $userId unique user identifier
+     * @param \PDO $PDOConnection PDO connection to MySQL db. see http://php.net/manual/en/pdo.construct.php
+     * @param array $otherProperties
+     *
      *   $otherProperties example:
      *    [
-     *      'tableName' => 'alternate_name_instead_of the_default_one',
+     *      'tableName' => 'special_rate_name',
      *    ]
      *
+     * @see createConnectionObj
      */
-    public function __construct($rate, $period, $userId, array $connectionProperties, array $otherProperties = null) {
+    public function __construct($rate, $period, $userId, \PDO $PDOConnection, array $otherProperties = null, $connProps) {
+        parent::__construct($rate, $period);
 
-        Assertion::isArray($connectionProperties);
+        $this->conn = $PDOConnection;
+
+        $this->connProps = $connProps;
 
         $default_other_props = array(
                 "tableName" => self::DEFAULT_TABLE_NAME,
@@ -61,69 +83,112 @@ class RateLimiterMysql implements \GodsDev\RateLimiter\RateLimiterInterface {
             $this->otherProps = array_merge($default_other_props, $otherProperties);
         }
         $this->tableName = $this->otherProps["tableName"];
-
-        $this->rate = $rate;
-        $this->period = $period;
         $this->userId = $userId;
-        $this->connProps = $connectionProperties;
+    }
 
-        $cp = $this->connProps;
-        $this->conn = new \PDO($cp["dsn"], $cp["user"], $cp["pass"]);
-        $this->conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+    /**
+     * @return \PDO a PDO db connection
+     */
+    private function getConnection() {
+        $this->conn = self::createConnectionObj($this->connProps);
+
+        return $this->conn;
+    }
+
+    private function releaseConnection() {
+        //$this->conn = null;
+        //echo "\n  connection released";
     }
 
 
-    protected function getTimestamp($timestamp) {
-        if ($timestamp != null) {
-            $val = $timestamp;
-        } else {
-            $val = time();
+
+    private function release($stmt) {
+        self::releaseStatement($stmt);
+        $this->releaseConnection();
+    }
+
+    private static function releaseStatement($PDOStmt) {
+        if ($PDOStmt != null) {
+            $PDOStmt->closeCursor();
+            $PDOStmt = null;
         }
-        return date("Y-m-d H:i:s", $val);
+    }
+
+    protected function incrementHitImpl($lastKnownHitCount, $lastKnownStartTime) {
+        //TODO: think about dirty read if same id is processed concurrently
+        return $this->upsertItem($lastKnownHitCount + 1, $lastKnownStartTime);
     }
 
 
-    protected function updateStatus($timestamp = null) {
-        $tooOldTime = $this->getTimestamp($timestamp) - $this->period;
-        $this->conn->exec(
-            "UPDATE `{$this->tableName}` SET `hits` = 0 WHERE `id` = {$this->userId} AND `timestamp` < {$tooOldTime}");
+    private function readDataFromExistingRow() {
+        $stmt = $this->getConnection()->prepare(
+            "SELECT * FROM `{$this->tableName}` WHERE `user_id` = \"{$this->userId}\" LIMIT 1"
+        );
+        try {
+            $stmt->execute();
+            if ($stmt->rowCount() < 1) {
+                return null;
+            } else if ($stmt->rowCount() == 1) {
+                $row = $stmt->fetch();
+                //var_dump($row);
+                $startTime = strtotime($row["start_time"]);
+                //var_dump($startTime);
+                $hits = $row["hits"];
+
+                return array("startTime" => $startTime, "hits" => $hits);
+            } else {
+                throw new RateLimiterException("sql in readDataFromExistingRow should return max 1 result");
+            }
+        } finally {
+            $this->release($stmt);
+        }
     }
 
 
-    public function getHits($timestamp = null) {
-        $res = $this->conn->query("SELECT * FROM `{$this->tableName}` WHERE `user_id` = \"{$this->userId}\""
-            //, \PDO::FETCH_ASSOC
+    protected function readDataImpl(&$hits, &$startTime) {
+        $data = $this->readDataFromExistingRow();
+        if ($data) {
+            $hits = $data["hits"];
+            $startTime = $data["startTime"];
+        } else {
+            $this->upsertItem($hits, $startTime);
+        }
+    }
+
+    protected function resetDataImpl($startTime) {
+//        echo "\n--resetDataImpl to " . date("Y-m-d H:i:s", $startTime) . " from "
+//                . debug_backtrace()[1]['function']; //get name of a caller function (reset)
+        $this->upsertItem(0, $startTime);
+        return $startTime;
+    }
+
+    private function upsertItem($hits, $startTime) {
+        $stmt = $this->getConnection()->prepare(
+                    "INSERT INTO `{$this->tableName}` SET `start_time` = FROM_UNIXTIME($startTime), `hits` = $hits, `user_id` = \"{$this->userId}\""
+                    . " ON DUPLICATE KEY UPDATE `start_time` = FROM_UNIXTIME($startTime), `hits` = $hits"
                 );
-        //var_dump($res);
-        $hits = intval($res->fetchColumn(3));
-        //var_dump($hits);
-        return $hits;
+        try {
+            return $stmt->execute();
+        } finally {
+            $this->release($stmt);
+        }
     }
 
-    public function getPeriod() {
-        return $this->period;
+
+    protected function sqlTimestamp($timestamp) {
+        return date("Y-m-d H:i:s", $timestamp);
     }
 
-    public function getRate() {
-        return $this->rate;
+
+    public static function deleteItemById($id, $connection, $tableName) {
+        $stmt = $connection->prepare(
+                    "DELETE FROM `{$tableName}` WHERE `user_id` = \"$id\""
+                );
+        try {
+            return $stmt->execute();
+        } finally {
+            self::releaseStatement($stmt);
+        }
     }
-
-    public function getTimeToWait($timestamp = null) {
-        return 0;
-    }
-
-    public function inc($timestamp = null) {
-        //$this->conn->query("INSERT INTO `{$this->tableName}` (hits, timestamp) VALUES((`hits` + 1), {$this->getTimestamp($timestamp)}) WHERE `user_id` = \"{$this->userId}\" ON DUPLICATE KEY UPDATE timestamp = VALUES(timestamp)");
-
-        $numAffected = $this->conn->exec("INSERT INTO `rate_limiter` SET `timestamp` = \"{$this->getTimestamp($timestamp)}\", `user_id` = \"{$this->userId}\""
-            . ", `hits` = (hits + 1) ON DUPLICATE KEY UPDATE user_id = \"{$this->userId}\", `hits` = (hits + 1)");
-
-        return ($numAffected > 0);
-    }
-
-    public function reset($timestamp = null) {
-        $numAffected = $this->conn->exec("DELETE FROM `rate_limiter` WHERE `user_id` = \"{$this->userId}\"");
-    }
-
 }
 

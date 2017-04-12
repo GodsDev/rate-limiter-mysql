@@ -2,10 +2,15 @@
 
 $config = array(
     "dbConnection" => array(
-            "dsn" => "mysql:dbname=rate_limiter_test;host=127.0.0.1",
+        //if you can, use localhost instead of 127.0.0.1 to speed up access on Linux. see a comment in http://php.net/manual/en/pdo.connections.php
+            "dsn" => "mysql:dbname=rate_limiter_test;host=localhost",
             "user" => "root",
             "pass" => "",
         ),
+
+    "otherConf" => array(
+            "tableName" => "rate_limiter",
+        )
 );
 
 
