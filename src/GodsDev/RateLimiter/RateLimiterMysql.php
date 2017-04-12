@@ -175,11 +175,6 @@ class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
     }
 
 
-    protected function sqlTimestamp($timestamp) {
-        return date("Y-m-d H:i:s", $timestamp);
-    }
-
-
     public static function deleteItemById($id, $connection, $tableName) {
         $stmt = $connection->prepare(
                     "DELETE FROM `{$tableName}` WHERE `user_id` = \"$id\""

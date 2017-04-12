@@ -28,7 +28,7 @@ class RateLimiterMysqlTest extends AbstractRateLimiterInterfaceTest {
 
         $this->connection = RateLimiterMysql::createConnectionObj($this->connProps);
         $this->deleteIds($this->connection);
-        
+
         parent::setUp();
 
     }
@@ -52,8 +52,15 @@ class RateLimiterMysqlTest extends AbstractRateLimiterInterfaceTest {
     }
 
 
-    public function test_Two_Limiters_With_Different_ID_Should_Behave_Independently() {
+    public function test_CreateConnectionObj_From_Bad_Config_Throws_RateLimiterException() {
+        global $config;
 
+        $this->setExpectedException(RateLimiterException::class);
+        $conn = RateLimiterMysql::createConnectionObj($config["dbConnectionMisconfiguration"]);
+    }
+
+
+    public function test_Two_Limiters_With_Different_ID_Should_Behave_Independently() {
 
         $limA = new RateLimiterMysql(3, 20, self::ID_A, $this->connection, null, $this->connProps);
         $limB = new RateLimiterMysql(3, 20, self::ID_B, $this->connection, null, $this->connProps);
