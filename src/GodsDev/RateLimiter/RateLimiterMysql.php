@@ -114,18 +114,11 @@ class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
         }
     }
 
-    protected function incrementHitImpl($lastKnownHitCount, $lastKnownStartTime, $increment) {
+    protected function incrementHitImpl($lastKnownHitCount, $lastKnownStartTime, $sanitizedIncrement) {
         //TODO: think about dirty read if same id is processed concurrently
-        if ($lastKnownHitCount + $increment > $this->getRate()) {
-            $resultingHitCount = $this->getRate();
-            $resultingIncrement = $this->getRate() - $lastKnownHitCount;
-        } else {
-            $resultingHitCount = $lastKnownHitCount + $increment;
-            $resultingIncrement = $increment;
-        }
-        $status = $this->upsertItem($resultingHitCount, $lastKnownStartTime);
+        $status = $this->upsertItem($lastKnownHitCount + $sanitizedIncrement, $lastKnownStartTime);
         if ($status) {
-            return $resultingIncrement;
+            return $sanitizedIncrement;
         } else {
             return 0;
         }
