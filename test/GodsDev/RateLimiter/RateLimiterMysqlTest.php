@@ -70,8 +70,8 @@ class RateLimiterMysqlTest extends AbstractRateLimiterInterfaceTest {
         //$this->assertLessThanOrEqual(1, 2);  //fail
 
         $this->assertLessThanOrEqual($t, $st_A);
-        $this->assertEquals(1, $limA->inc($t));
-        $this->assertEquals(1, $limA->getHits($t));
+        $this->assertEquals(1, $limA->inc($t), "limA inc(t)");
+        $this->assertEquals(1, $limA->getHits($t), "limA getHits(t), is timezone set properly?");
 
         $t += 10;
 

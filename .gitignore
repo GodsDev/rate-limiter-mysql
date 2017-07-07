@@ -1,8 +1,13 @@
-/vendor
-
-# Commit your application's lock file http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file
-# You may choose to ignore a library lock file http://getcomposer.org/doc/02-libraries.md#lock-file
-composer.lock
-
-temp
+# IDE
 /nbproject
+
+# Composer infrastructure
+/vendor/
+/composer.lock
+
+# Code coverage
+temp/*
+!temp/.htaccess
+
+#disable private local files
+*.local.php

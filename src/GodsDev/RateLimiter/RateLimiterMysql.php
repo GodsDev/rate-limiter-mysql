@@ -8,25 +8,41 @@ use Assert\Assertion;
  * A RateLimiterInterface implementation using a PDO db layer
  *
  *
- * @see RateLimiterInterface
+ * @see RateLimiterInterface https://github.com/godsdev/rate-limiter-interface
+ * 
+ * @author Tomáš Kraus
  */
-
-
 class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
+
     const DEFAULT_TABLE_NAME = "rate_limiter"; //default rate limiter table name
-
-    private $userId;
-
-    private $otherProps;
-    private $tableName;
-
-    private $conn; //PDO connection
-
-
 
     /**
      *
-     * creates a PDO db connection object
+     * @var string
+     */
+    private $userId;
+
+    /**
+     *
+     * @var array
+     */
+    private $otherProps;
+
+    /**
+     *
+     * @var string
+     */
+    private $tableName;
+
+    /**
+     * PDO connection
+     * 
+     * @var \PDO
+     */
+    private $conn;
+
+    /**
+     * Creates a PDO db connection object
      *
      *   $connection properties example:
      *    [
@@ -36,17 +52,20 @@ class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
      *    ]
      *
      * @see http://php.net/manual/en/pdo.construct.php
+     * 
+     * @param array $connectionProperties
+     * @return \PDO
+     * @throws RateLimiterException
      */
     public static function createConnectionObj($connectionProperties) {
         Assertion::isArray($connectionProperties);
         try {
             $cp = $connectionProperties;
             $conn = new \PDO($cp["dsn"], $cp["user"], $cp["pass"]
-                    , (false) ?
-                        array(\PDO::ATTR_PERSISTENT => true)
-                        :
-                        array()
-                );
+                    , (false) ? //@todo allow options
+                    array(\PDO::ATTR_PERSISTENT => true) :
+                    array()
+            );
             $conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
             return $conn;
@@ -54,9 +73,10 @@ class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
             throw new RateLimiterException("createConnectionObj failed", -1, $pe);
         }
     }
-
+    
     /**
-     *
+     * Creates the limiter object that uses MySQL to track states accessed by \GodsDev\RateLimiter\AbstractRateLimiter methods
+     *  
      * @param integer $rate number of requests per period
      * @param integer $period duration of a period
      * @param string $userId unique user identifier
@@ -76,7 +96,7 @@ class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
         $this->conn = $PDOConnection;
 
         $default_other_props = array(
-                "tableName" => self::DEFAULT_TABLE_NAME,
+            "tableName" => self::DEFAULT_TABLE_NAME,
         );
         if ($otherProperties == null) {
             $this->otherProps = $default_other_props;
@@ -95,18 +115,29 @@ class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
         return $this->conn;
     }
 
+    /**
+     * @todo
+     */
     private function releaseConnection() {
         //$this->conn = null;
         //echo "\n  connection released";
     }
 
-
-
+    /**
+     * @todo what does it do and why
+     * 
+     * @param type $stmt
+     */
     private function release($stmt) {
         self::releaseStatement($stmt);
         $this->releaseConnection();
     }
 
+    /**
+     * @todo what does it do and why
+     * 
+     * @param type $PDOStmt
+     */
     private static function releaseStatement($PDOStmt) {
         if ($PDOStmt != null) {
             $PDOStmt->closeCursor();
@@ -114,6 +145,14 @@ class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
         }
     }
 
+    /**
+     * @todo what does it do and why
+     * 
+     * @param int $lastKnownHitCount
+     * @param int $lastKnownStartTime
+     * @param int $sanitizedIncrement
+     * @return int
+     */
     protected function incrementHitImpl($lastKnownHitCount, $lastKnownStartTime, $sanitizedIncrement) {
         //TODO: think about dirty read if same id is processed concurrently
         $status = $this->upsertItem($lastKnownHitCount + $sanitizedIncrement, $lastKnownStartTime);
@@ -124,10 +163,15 @@ class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
         }
     }
 
-
+    /**
+     * @todo what does it do and why
+     * 
+     * @return mixed array|null
+     * @throws RateLimiterException
+     */
     private function readDataFromExistingRow() {
         $stmt = $this->getConnection()->prepare(
-            "SELECT * FROM `{$this->tableName}` WHERE `user_id` = \"{$this->userId}\" LIMIT 1"
+                "SELECT * FROM `{$this->tableName}` WHERE `user_id` = \"{$this->userId}\" LIMIT 1"
         );
         try {
             $stmt->execute();
@@ -149,7 +193,11 @@ class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
         }
     }
 
-
+    /**
+     * 
+     * @param int $hits
+     * @param int $startTime
+     */
     protected function readDataImpl(&$hits, &$startTime) {
         $data = $this->readDataFromExistingRow();
         if ($data) {
@@ -160,6 +208,11 @@ class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
         }
     }
 
+    /**
+     * 
+     * @param int $startTime
+     * @return int
+     */
     protected function resetDataImpl($startTime) {
 //        echo "\n--resetDataImpl to " . date("Y-m-d H:i:s", $startTime) . " from "
 //                . debug_backtrace()[1]['function']; //get name of a caller function (reset)
@@ -167,11 +220,17 @@ class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
         return $startTime;
     }
 
+    /**
+     * 
+     * @param int $hits
+     * @param int $startTime
+     * @return bool
+     */
     private function upsertItem($hits, $startTime) {
         $stmt = $this->getConnection()->prepare(
-                    "INSERT INTO `{$this->tableName}` SET `start_time` = FROM_UNIXTIME($startTime), `hits` = $hits, `user_id` = \"{$this->userId}\""
-                    . " ON DUPLICATE KEY UPDATE `start_time` = FROM_UNIXTIME($startTime), `hits` = $hits"
-                );
+                "INSERT INTO `{$this->tableName}` SET `start_time` = FROM_UNIXTIME({$startTime}), `hits` = $hits, `user_id` = \"{$this->userId}\""
+                . " ON DUPLICATE KEY UPDATE `start_time` = FROM_UNIXTIME({$startTime}), `hits` = {$hits}"
+        );
         try {
             return $stmt->execute();
         } finally {
@@ -179,16 +238,22 @@ class RateLimiterMysql extends \GodsDev\RateLimiter\AbstractRateLimiter {
         }
     }
 
-
+    /**
+     * 
+     * @param string $id
+     * @param \PDO $connection
+     * @param string $tableName
+     * @return bool
+     */
     public static function deleteItemById($id, $connection, $tableName) {
         $stmt = $connection->prepare(
-                    "DELETE FROM `{$tableName}` WHERE `user_id` = \"$id\""
-                );
+                "DELETE FROM `{$tableName}` WHERE `user_id` = \"{$id}\""
+        );
         try {
             return $stmt->execute();
         } finally {
             self::releaseStatement($stmt);
         }
     }
-}
 
+}
