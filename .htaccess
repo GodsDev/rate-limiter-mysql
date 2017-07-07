@@ -1,0 +1,13 @@
+<IfModule mod_alias.c>
+RedirectMatch 404 /\.git
+RedirectMatch 404 vendor
+RedirectMatch 404 composer\.
+RedirectMatch 404 phpunit\.xml
+RedirectMatch 404 \.gitignore
+RedirectMatch 404 README\.md
+RedirectMatch 404 /sql
+# RedirectMatch 404 Test
+# RedirectMatch 404 log
+RedirectMatch 404 VERSION
+RedirectMatch 404 \.sh
+</IfModule>

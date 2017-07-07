@@ -1,0 +1,13 @@
+# IDE
+/nbproject
+
+# Composer infrastructure
+/vendor/
+/composer.lock
+
+# Code coverage
+temp/*
+!temp/.htaccess
+
+#disable private local files
+*.local.php

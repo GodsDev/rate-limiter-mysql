@@ -1,0 +1,4 @@
+Order Allow,Deny
+Deny from all
+
+# other files in this temp folder may be deleted anytime
